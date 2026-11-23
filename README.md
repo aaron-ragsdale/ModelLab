@@ -28,13 +28,13 @@ The entire app is in `index.html`. It runs on GitHub Pages without a backend, No
 
 ## Interactive walkthrough
 
-Select **Walk me through the lab** near the top of the page. Each of the eight steps explains a section, what its controls do, and why the settings affect inference performance. The walkthrough highlights the relevant part of the page.
+Select **Take the guided walkthrough** near the top of the page. Nine animated spotlight steps move through the experiments, performance readings, filtering lab, comparisons, and device diagnostics. Use Continue / Back or keyboard arrow keys; Escape closes the walkthrough.
 
 ## How to run a fair comparison
 
 1. Use the same browser, position, lighting, and camera scene.
 2. Run a configuration for at least 15 seconds before saving.
-3. Use **Compare Lite, Full & Heavy** for an automatic guided pose-only comparison. Then test **Hands only** and **Body pose + hands** manually with matching settings.
+3. Use **Compare Pose Lite / Full / Heavy**, **Compare 3 tracking modes**, or **Run selected · 8 sec**, all grouped under the camera. Each benchmark auto-saves. Then compare settings and tracking modes with the saved-results chart.
 4. Repeat with **CPU vs. GPU**, keeping all other settings the same.
 5. Repeat on an iPad or an 8 GB laptop and export CSV files from each device.
 6. Record unusual cases such as multiple people, rapid motion, and low lighting.
@@ -59,6 +59,18 @@ The **Compare saved benchmarks** chart can compare Body Pose, Hands Only, Body +
 4. Check the interpretation and comparison caution. The chart flags mismatched camera resolution, target FPS, max poses, backend, or browser/device.
 
 The chart loads the latest 12 saved runs into its selection list. Run data stays in browser local storage until cleared or exported as CSV. A shorter latency bar is better; a longer processed-FPS bar is better. These are timing comparisons, not accuracy measurements.
+
+## Latency & Filtering Lab
+
+Run continuous camera inference, then scroll to **Latency & Filtering Lab**. Choose a visible body wrist, elbow, shoulder, or hand fingertip. Select a compatible model mode: body landmarks require Pose, while fingertips require Hands. The live camera adds three colored points to the chosen landmark:
+
+- **Red: Raw** model coordinates (no additional smoothing).
+- **Blue: EMA** smoothed coordinates; set alpha between 0.05 and 1. Higher alpha follows raw more closely with less smoothing.
+- **Gold: One Euro** adaptive filter; adjust the minimum cutoff (Hz) and beta (speed sensitivity). Increasing beta causes the filter to react more quickly when motion is fast.
+
+Two synchronized graphs show horizontal position (normalized image X) and estimated horizontal velocity using actual inference timestamps. Press **Start movement experiment** while continuous tracking is running. The prompt sequence is still (3 s), quick movement (2 s), stop (2 s), reverse (2 s). Review measured stationary jitter, approximate response delay relative to raw, and estimated overshoot relative to the raw stop position. Export the filter traces as CSV to analyze elsewhere.
+
+**Important:** Raw MediaPipe measurements are themselves predictions, not an external ground-truth motion capture. Relative filter lag and overshoot are experimental estimates, not calibrated physical latency. The camera and model must keep the chosen landmark visible. A missed landmark can interrupt a trial.
 
 ## Understanding the metrics
 
