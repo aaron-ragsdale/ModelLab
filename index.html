@@ -421,14 +421,36 @@ async function guidedTest(){const s=readSettings();await runSeries(['lite','full
 async function quickTest(){const s=readSettings();await runSeries([{mode:s.mode,model:s.model}])}
 async function allModesTest(){const s=readSettings();await runSeries([{mode:'pose',model:s.model},{mode:'hands',model:s.model},{mode:'both',model:s.model}])}
 function sd(values){if(values.length<3)return NaN;const mean=values.reduce((a,b)=>a+b,0)/values.length;return Math.sqrt(values.reduce((sum,v)=>sum+(v-mean)**2,0)/(values.length-1))}
+function meanArray(values){return values.length?values.reduce((a,b)=>a+b,0)/values.length:NaN}
 function evaluateExperiment(){
  const ex=experiment;if(!ex)return;
- const still=ex.points.filter(p=>p.t>=ex.begin&&p.t<ex.begin+3);
- const fields=['raw','ema','euro'];
- const jitter=fields.map(k=>sd(still.map(p=>p[k])));
- const valid=jitter.every(Number.isFinite);
- $('movementResult').textContent=valid?'Stillness jitter (standard deviation, normalized X): Raw '+jitter[0].toFixed(4)+' · EMA '+jitter[1].toFixed(4)+' · One Euro '+jitter[2].toFixed(4)+'. Lower values mean less stationary variation. Fast-response delay and overshoot should be judged from the graphs because no independent ground-truth position is available.':'Not enough stillness samples to calculate jitter. Keep your selected landmark visible and try again.';
- $('movementPhase').textContent='Experiment complete. Review the plots and jitter values. You can repeat with different smoothing settings.';
+ const p=ex.points,b=ex.begin;
+ const still=p.filter(q=>q.t>=b&&q.t<b+3);
+ const baseline=p.filter(q=>q.t>=b+2&&q.t<b+3);
+ const settled=p.filter(q=>q.t>=b+5.6&&q.t<b+6.8);
+ const crossingData=p.filter(q=>q.t>=b+3&&q.t<=b+6.8);
+ const keys=['raw','ema','euro'];
+ const jitters=keys.map(k=>sd(still.map(q=>q[k])));
+ const rawStart=meanArray(baseline.map(q=>q.raw)),rawEnd=meanArray(settled.map(q=>q.raw));
+ const delta=rawEnd-rawStart,sign=Math.sign(delta);
+ const half=rawStart+delta*.5;
+ function crossing(key){const item=crossingData.find(q=>sign*(q[key]-half)>=0);return item?.t??NaN}
+ const rawCross=crossing('raw');
+ const lags=keys.map(k=>Number.isFinite(rawCross)&&Number.isFinite(crossing(k))?(crossing(k)-rawCross)*1000:NaN);
+ const overshoot=keys.map(k=>{
+  if(!sign||!Number.isFinite(rawEnd))return NaN;
+  const peak=Math.max(...p.filter(q=>q.t>=b+3&&q.t<=b+7).map(q=>sign*(q[k]-rawEnd)));
+  return Math.max(0,peak);
+ });
+ const line=(label,vals,units)=>label+': '+keys.map((k,i)=>k.toUpperCase()+' '+(Number.isFinite(vals[i])?vals[i].toFixed(units==='ms'?0:4)+units:'n/a')).join(' · ');
+ const reliable=Math.abs(delta)>.04&&still.length>5&&settled.length>3;
+ const lines=[line('Stillness jitter (SD of normalized X)',jitters,'')];
+ if(reliable){
+  lines.push(line('50% transition delay vs raw',lags,'ms'));
+  lines.push(line('Peak overshoot past raw stop position',overshoot,''));
+ }else lines.push('Insufficient clear movement to estimate response delay or overshoot. Move farther and hold the stop position steadily.');
+ $('movementResult').textContent=lines.join('  |  ')+'  These are estimates relative to the raw model, not measured ground-truth latency or physical overshoot.';
+ $('movementPhase').textContent='Experiment complete. Change the filters and repeat to compare.';
 }
 async function runMovementTest(){
  if(experiment?.state==='recording')return;
