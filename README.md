@@ -41,6 +41,17 @@ Select **Walk me through the lab** near the top of the page. Each of the eight s
 
 Changes to model, delegate, camera resolution, and pose count take effect when you stop and restart. The target FPS slider works live.
 
+## Compare any saved benchmarks
+
+The **Compare saved benchmarks** chart can compare Body Pose, Hands Only, Body + Hands, and runs using different CPU/GPU backends.
+
+1. Run a configuration for 15–20 seconds and select **Save benchmark**. Stop and repeat with another mode or setting.
+2. Scroll to **Compare saved benchmarks**. Choose a quick selection (latest tests, pose-only, hand/combined, or CPU/GPU) or select individual saved runs.
+3. Choose **Mean inference time**, **P95 inference time**, or **Processed FPS**.
+4. Check the interpretation and comparison caution. The chart flags mismatched camera resolution, target FPS, max poses, backend, or browser/device.
+
+The chart loads the latest 12 saved runs into its selection list. Run data stays in browser local storage until cleared or exported as CSV. A shorter latency bar is better; a longer processed-FPS bar is better. These are timing comparisons, not accuracy measurements.
+
 ## Understanding the metrics
 
 | Measurement | What it means |
