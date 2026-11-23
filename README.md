@@ -14,22 +14,27 @@ A browser-based computer vision development sandbox from **OpenSportSense**. Mod
 
 The entire app is in `index.html`. It runs on GitHub Pages without a backend, Node installation, API key, or Python server.
 
-## Experiments in version 1
+## Experiments
 
-- **Models:** Google MediaPipe Pose Landmarker Lite, Full, and Heavy.
+- **Modes:** Body pose only (33 landmarks per person), hands only (21 landmarks per hand, up to two hands), or body pose + hands concurrently.
+- **Models:** Google MediaPipe Pose Landmarker Lite, Full, and Heavy when pose is enabled; MediaPipe Hand Landmarker when hands are enabled.
 - **Delegates:** GPU (WebGL) and CPU (WebAssembly). If GPU initialization fails, the app attempts a CPU fallback and labels that result.
 - **Input requests:** 320 × 240, 640 × 480, and 1280 × 720. The page reports the resolution actually delivered by the camera, which may differ.
 - **Multiple poses:** 1, 2, or 4.
 - **Processing targets:** 5–60 inferences per second. A target is a maximum attempt rate, not a guaranteed achieved rate.
 - **Inspection:** Live skeleton/landmark overlay and device/browser capabilities.
-- **Performance:** Processed FPS, mean inference time, P95 inference time, model initialization time, and inference history.
+- **Performance:** Processed FPS, mean inference time, P95 inference time, model initialization time, and inference history. In combined mode, separate Pose and Hand inference timings are also shown.
 - **History:** Save benchmark results to browser local storage and export a CSV to compare machines.
+
+## Interactive walkthrough
+
+Select **Walk me through the lab** near the top of the page. Each of the eight steps explains a section, what its controls do, and why the settings affect inference performance. The walkthrough highlights the relevant part of the page.
 
 ## How to run a fair comparison
 
 1. Use the same browser, position, lighting, and camera scene.
 2. Run a configuration for at least 15 seconds before saving.
-3. Try **Pose Lite → Full → Heavy** at the same resolution and target FPS.
+3. Use **Compare Lite, Full & Heavy** for an automatic guided pose-only comparison. Then test **Hands only** and **Body pose + hands** manually with matching settings.
 4. Repeat with **CPU vs. GPU**, keeping all other settings the same.
 5. Repeat on an iPad or an 8 GB laptop and export CSV files from each device.
 6. Record unusual cases such as multiple people, rapid motion, and low lighting.
@@ -62,7 +67,7 @@ The camera is processed in the browser; Model Lab does not upload footage or lan
 
 ## Roadmap
 
-- Hand Landmarker and face/object detector benchmarks
+- Face/object detector benchmarks and automated cross-mode comparisons
 - Comparison charts across saved runs
 - Custom ONNX movement classifiers and stage-by-stage timing
 - A data collection tab for recording labeled landmark sequences
