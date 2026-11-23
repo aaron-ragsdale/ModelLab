@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f6f8fb">
+<title>Model Lab · OpenSportSense</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#17263b;background:#f5f7fa;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}.shell{max-width:1390px;margin:0 auto;padding:30px 26px 70px}
+header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:27px}.brand{display:flex;gap:13px;align-items:center}.logo{height:44px;width:44px;border-radius:13px;background:#162e49;color:#a7f3d0;display:grid;place-items:center;font-weight:900;font-size:23px}.brand strong{font-size:20px;letter-spacing:-.6px}.brand small{display:block;color:#6e7d8d;font-size:12px;margin-top:3px}.pill{border:1px solid #dce5ed;background:white;border-radius:999px;padding:8px 13px;font-size:12px;color:#607387}
+h1{font-size:clamp(29px,3.2vw,42px);letter-spacing:-1.4px;line-height:1.1;margin:0 0 12px}p{line-height:1.6}.lead{color:#607387;margin:0 0 26px;max-width:780px;font-size:15px}.eyebrow{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#158f82;font-weight:800;margin-bottom:11px}
+.layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,1fr);gap:18px}.stack{display:grid;gap:18px;align-content:start}
+.panel{background:#fff;border:1px solid #e1e8f0;border-radius:17px;box-shadow:0 4px 24px #22334c07;padding:22px;min-width:0}
+.sectiontitle{font-size:17px;font-weight:750;letter-spacing:-.3px;margin:0}.muted{color:#6a7a8c;font-size:13px}.panelhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:17px;flex-wrap:wrap}
+.camera{background:#111b2b;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;display:grid;place-items:center}
+.camera video,.camera canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1)}
+.camera canvas{pointer-events:none}.empty{color:#a9b9ca;text-align:center;max-width:250px;font-size:14px;line-height:1.65}.camtag{position:absolute;left:12px;top:12px;padding:6px 10px;border:1px solid #ffffff33;background:#101e30c4;color:white;border-radius:7px;font-size:11px;font-weight:700;z-index:2}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}button,select{font:inherit;border:1px solid #d9e3ec;border-radius:9px;padding:11px 12px;background:#fff;color:#22354b}button{cursor:pointer;font-weight:700;font-size:13px}button:hover{background:#edf3f8}button:disabled{cursor:not-allowed;opacity:.45}button.primary{background:#147c78;color:white;border-color:#147c78}button.primary:hover{background:#116d69}button.danger{color:#af4350}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #66c7bc}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field label{display:block;font-size:12px;color:#637488;font-weight:650;margin-bottom:7px}.field select{width:100%;font-size:13px}.field input[type=range]{width:100%;accent-color:#147c78}.rangeheader{display:flex;justify-content:space-between;font-size:12px;color:#607387}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.status{font-size:12px;color:#687a8c;margin-top:12px;min-height:18px}.status.error{color:#ba3d47}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.metric{background:#f5f8fa;border:1px solid #e7edf2;border-radius:12px;padding:15px 13px}.metric .num{font-size:clamp(19px,2.5vw,27px);font-weight:800;letter-spacing:-.7px;font-variant-numeric:tabular-nums}.metric .label{font-size:11px;color:#708092;margin-top:6px}.tiny{font-size:11px;color:#8190a0;line-height:1.5}.chart{width:100%;height:125px;background:#f7f9fb;border:1px solid #ebeff3;border-radius:10px;display:block}
+.legend{display:flex;gap:16px;margin-top:10px;color:#6d7e91;font-size:11px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#168a84;margin-right:5px}
+.spec{display:grid;grid-template-columns:1fr auto;border-bottom:1px solid #edf1f4;padding:10px 0;gap:8px;font-size:12px}.spec span:first-child{color:#728193}.spec strong{font-weight:650;text-align:right;overflow-wrap:anywhere}
+.notes{background:#f2f8f7;color:#3c665f;border-radius:10px;padding:12px 14px;font-size:12px;line-height:1.6;margin-top:13px}
+.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}th,td{padding:12px 10px;text-align:left;border-bottom:1px solid #e9eef3}th{color:#77879a;font-weight:700}td{font-variant-numeric:tabular-nums}td small{display:block;color:#8391a0}.foot{margin-top:25px;color:#7d8b9b;font-size:12px}.check{display:flex;align-items:center;gap:8px;font-size:12px;color:#55677a;margin-top:12px}.check input{accent-color:#147c78}
+@media(max-width:980px){.layout{grid-template-columns:1fr}}@media(max-width:630px){.shell{padding:20px 13px 45px}.panel{padding:16px}.metrics{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr}header .pill{display:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header><div class="brand"><div class="logo">M</div><div><strong>Model Lab</strong><small>OpenSportSense / Development Sandbox</small></div></div><span class="pill">LOCAL INFERENCE · NO VIDEO UPLOAD</span></header>
+<div class="eyebrow">01 / Computer vision benchmark</div>
+<h1>Look under the hood.</h1>
+<p class="lead">Run Google MediaPipe Pose Landmarker on your own device. Change the model, execution backend, resolution, and processing rate, then compare real measurements. Everything runs in this browser.</p>
+<div class="layout">
+<div class="stack">
+<section class="panel">
+<div class="panelhead"><h2 class="sectiontitle">Live model inspection</h2><span class="pill" id="liveLabel">Not running</span></div>
+<div class="camera"><video id="video" autoplay playsinline muted></video><canvas id="overlay"></canvas><div class="camtag" id="cameraTag">CAMERA OFF</div><div class="empty" id="placeholder">Enable your camera to inspect model predictions and measure inference time.</div></div>
+<div class="actions"><button class="primary" id="start">Start camera + model</button><button id="pause" disabled>Pause inference</button><button id="stop" disabled>Stop</button><button id="snapshot" disabled>Save benchmark</button></div>
+<div class="status" id="status" role="status" aria-live="polite">Ready. Camera access is requested only when you press Start.</div>
+<label class="check"><input type="checkbox" id="draw" checked> Draw skeleton and keypoints</label>
+</section>
+<section class="panel">
+<div class="panelhead"><h2 class="sectiontitle">Real-time performance</h2><span class="muted" id="samples">0 inference samples</span></div>
+<div class="metrics">
+<div class="metric"><div class="num" id="fps">—</div><div class="label">Processed FPS</div></div>
+<div class="metric"><div class="num" id="avg">—</div><div class="label">Mean inference · ms</div></div>
+<div class="metric"><div class="num" id="p95">—</div><div class="label">P95 inference · ms</div></div>
+<div class="metric"><div class="num" id="people">—</div><div class="label">Detected people</div></div>
+</div>
+<div style="margin-top:19px"><div class="panelhead" style="margin-bottom:8px"><strong style="font-size:13px">Inference latency history</strong><span class="tiny">Most recent 120 samples · ms</span></div><canvas class="chart" id="chart" width="800" height="250"></canvas><div class="legend"><span><i class="dot"></i>Inference duration</span><span>Target frame interval: <b id="budget">33.3 ms</b></span></div></div>
+<div class="notes">Inference timing measures the synchronous <code>detectForVideo()</code> call, not end-to-end camera-to-display latency. Processing FPS counts completed inferences, not the camera's native FPS.</div>
+</section>
+<section class="panel">
+<div class="panelhead"><h2 class="sectiontitle">Benchmark history</h2><div class="row"><button id="export">Export CSV</button><button id="clear" class="danger">Clear results</button></div></div>
+<div class="tablewrap"><table><thead><tr><th>Recorded</th><th>Model</th><th>Backend</th><th>Resolution</th><th>FPS</th><th>Avg ms</th><th>P95 ms</th><th>Samples</th></tr></thead><tbody id="results"><tr><td colspan="8" class="muted">No benchmarks saved yet.</td></tr></tbody></table></div>
+<p class="tiny">Saved locally in this browser. Export the CSV to compare machines or share results. For reliable comparisons, run each configuration for at least 15 seconds under similar conditions.</p>
+</section>
+</div>
+<div class="stack">
+<section class="panel">
+<div class="panelhead"><h2 class="sectiontitle">Experiment controls</h2><span class="pill">Adjust + restart</span></div>
+<div class="controls">
+<div class="field"><label for="model">Pose model</label><select id="model"><option value="lite">Pose Lite</option><option value="full" selected>Pose Full</option><option value="heavy">Pose Heavy</option></select></div>
+<div class="field"><label for="delegate">Execution backend</label><select id="delegate"><option value="GPU">GPU (WebGL)</option><option value="CPU">CPU (WASM)</option></select></div>
+<div class="field"><label for="resolution">Camera resolution request</label><select id="resolution"><option value="320">320 × 240</option><option value="640" selected>640 × 480</option><option value="1280">1280 × 720</option></select></div>
+<div class="field"><label for="maxpose">Max poses</label><select id="maxpose"><option value="1" selected>1 person</option><option value="2">2 people</option><option value="4">4 people</option></select></div>
+</div>
+<div class="field" style="margin-top:18px"><div class="rangeheader"><label for="target">Target inference rate</label><b id="targetValue">30 FPS</b></div><input id="target" type="range" min="5" max="60" step="5" value="30"></div>
+<p class="tiny">Model, backend, camera resolution, and max poses apply after restarting. Target FPS and skeleton display update immediately. Requesting a lower camera resolution does not necessarily change the neural network's internal input size.</p>
+</section>
+<section class="panel">
+<div class="panelhead"><h2 class="sectiontitle">Device diagnostics</h2><span class="pill">This browser</span></div>
+<div id="specs"></div>
+<div class="notes">Browser RAM and GPU memory usage are not generally exposed reliably. Where available, the page reports JavaScript heap statistics only; these do <b>not</b> represent the MediaPipe model's total memory footprint.</div>
+</section>
+<section class="panel">
+<div class="panelhead"><h2 class="sectiontitle">Model and pipeline</h2><span class="pill">Inspect</span></div>
+<div id="pipeline">
+<div class="spec"><span>Task</span><strong>MediaPipe Pose Landmarker</strong></div>
+<div class="spec"><span>Model landmarks</span><strong>33 per person</strong></div>
+<div class="spec"><span>Model asset</span><strong id="asset">Pose Full · float16</strong></div>
+<div class="spec"><span>Model initialization</span><strong id="init">—</strong></div>
+<div class="spec"><span>Actual camera dimensions</span><strong id="actualRes">—</strong></div>
+<div class="spec"><span>Inference compute</span><strong id="actualDelegate">—</strong></div>
+<div class="spec"><span>JS heap used (if exposed)</span><strong id="heap">Unavailable</strong></div>
+</div>
+<p class="tiny">GPU/CPU selection refers to the MediaPipe Tasks delegate, not necessarily a dedicated graphics card. Reloading a model may reuse browser caches.</p>
+</section>
+<section class="panel"><h2 class="sectiontitle">Next experiments</h2><p class="muted">This first release establishes a baseline for testing hardware limits. Future additions could include Hand Landmarker, object detectors, custom ONNX classifiers, comparison charts, and per-stage pipeline profiling.</p></section>
+</div>
+</div>
+<div class="foot">OpenSportSense Model Lab · Browser-only inference · Model downloads require internet access on first load. No camera frames are transmitted by this application.</div>
+</div>
+<script type="module">
+import {PoseLandmarker,FilesetResolver,DrawingUtils} from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm';
+const $=id=>document.getElementById(id), video=$('video'), overlay=$('overlay'), ctx=overlay.getContext('2d'), drawing=new DrawingUtils(ctx);
+const models={lite:'pose_landmarker_lite',full:'pose_landmarker_full',heavy:'pose_landmarker_heavy'};
+const base='https://storage.googleapis.com/mediapipe-models/pose_landmarker/';
+let pose=null,stream=null,active=false,paused=false,raf=0,lastAttempt=0,lastVideoTime=-1,lastRender=0,latencies=[],times=[],personCount=0,startedAt=0,loadedDelegate='',loadMs=0,session={};
+const STORAGE='oss-model-lab-bench-v1';
+let history=[];try{history=JSON.parse(localStorage.getItem(STORAGE)||'[]');if(!Array.isArray(history))history=[]}catch{}
+function status(msg,error=false){$('status').textContent=msg;$('status').className='status'+(error?' error':'')}
+function fmt(v,d=1){return Number.isFinite(v)?v.toFixed(d):'—'}
+function percentile(a,p){if(!a.length)return NaN;let x=[...a].sort((a,b)=>a-b);return x[Math.ceil(p*x.length)-1]}
+function stats(){const n=latencies.length;return {n,avg:n?latencies.reduce((a,b)=>a+b,0)/n:NaN,p95:percentile(latencies,.95),fps:times.length>1?(times.length-1)*1000/(times[times.length-1]-times[0]):NaN}}
+function setButtons(){ $('start').disabled=active;$('stop').disabled=!active;$('pause').disabled=!active;$('snapshot').disabled=!active||latencies.length<10;$('pause').textContent=paused?'Resume inference':'Pause inference';$('liveLabel').textContent=active?(paused?'Paused':'Running'):'Not running';$('cameraTag').textContent=active?(paused?'PAUSED':'LIVE / LOCAL'):'CAMERA OFF' }
+function readSettings(){return {model:$('model').value,delegate:$('delegate').value,resolution:$('resolution').value,maxpose:Number($('maxpose').value),target:Number($('target').value)}}
+function plot(){const c=$('chart'),g=c.getContext('2d'),w=c.width,h=c.height;g.clearRect(0,0,w,h);const d=latencies.slice(-120);if(!d.length)return;const ymax=Math.max(40,...d)*1.15;g.strokeStyle='#dce5eb';g.lineWidth=1;for(let i=1;i<4;i++){let y=h*i/4;g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}g.strokeStyle='#158b85';g.lineWidth=3;g.beginPath();d.forEach((v,i)=>{let x=i/Math.max(1,d.length-1)*w,y=h-8-v/ymax*(h-16);i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke();g.font='18px system-ui';g.fillStyle='#78899b';g.fillText(fmt(ymax,0)+' ms',12,25)}
+function update(){const s=stats();$('samples').textContent=s.n+' inference samples';$('fps').textContent=fmt(s.fps);$('avg').textContent=fmt(s.avg);$('p95').textContent=fmt(s.p95);$('people').textContent=active?personCount:'—';$('heap').textContent=performance.memory?fmt(performance.memory.usedJSHeapSize/1048576)+' MiB':'Unavailable';plot()}
+function diagnostics(){let d=[['Platform',navigator.userAgentData?.platform||navigator.platform||'Unknown'],['Logical CPU cores',navigator.hardwareConcurrency??'Unavailable'],['Reported device memory',navigator.deviceMemory?navigator.deviceMemory+' GiB (approx.)':'Unavailable'],['GPU API (WebGL)',!!document.createElement('canvas').getContext('webgl2')?'WebGL2 available':'Unavailable'],['WebGPU API',navigator.gpu?'Available (support varies)':'Unavailable'],['Browser',navigator.userAgent],['Connection','Not measured']];$('specs').replaceChildren();for(let [a,b] of d){let e=document.createElement('div');e.className='spec';let l=document.createElement('span'),v=document.createElement('strong');l.textContent=a;v.textContent=b;e.append(l,v);$('specs').append(e)}}
+function draw(result){if(!active||!video.videoWidth)return;const rect=video.getBoundingClientRect(),cw=rect.width,ch=rect.height;const pixelRatio=Math.min(window.devicePixelRatio||1,2);if(overlay.width!==Math.round(cw*pixelRatio)||overlay.height!==Math.round(ch*pixelRatio)){overlay.width=Math.round(cw*pixelRatio);overlay.height=Math.round(ch*pixelRatio)}
+ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0);ctx.clearRect(0,0,cw,ch);if(!$('draw').checked)return;
+const sx=Math.min(cw/video.videoWidth,ch/video.videoHeight),offX=(cw-video.videoWidth*sx)/2,offY=(ch-video.videoHeight*sx)/2;ctx.save();ctx.translate(offX,offY);ctx.scale(video.videoWidth*sx,video.videoHeight*sx);
+for(const marks of result.landmarks||[]){drawing.drawConnectors(marks,PoseLandmarker.POSE_CONNECTIONS,{color:'#63f6c4',lineWidth:2/(video.videoWidth*sx)});drawing.drawLandmarks(marks,{color:'#ffffff',fillColor:'#0c9d90',radius:3/(video.videoWidth*sx)});}ctx.restore()}
+function frame(ts){if(!active)return;raf=requestAnimationFrame(frame);if(paused||!pose||video.readyState<2)return;const limit=1000/readSettings().target;if(ts-lastAttempt<limit)return;if(video.currentTime===lastVideoTime)return;lastAttempt=ts;lastVideoTime=video.currentTime;
+try{const t0=performance.now(),result=pose.detectForVideo(video,t0),duration=performance.now()-t0;personCount=result.landmarks?.length||0;latencies.push(duration);times.push(performance.now());if(latencies.length>600)latencies.shift();if(times.length>120)times.shift();draw(result);if(ts-lastRender>250){update();lastRender=ts;}}catch(e){status('Inference error: '+e.message,true);stop()}}
+async function stop(){active=false;paused=false;cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(pose){pose.close();pose=null}video.srcObject=null;ctx.clearRect(0,0,overlay.width,overlay.height);$('placeholder').hidden=false;setButtons();update()}
+async function start(){if(active)return;const cfg=readSettings();$('start').disabled=true;status('Loading model and requesting camera…');let created=null;try{
+const wasm=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+const url=base+models[cfg.model]+'/float16/1/'+models[cfg.model]+'.task';
+$('asset').textContent=cfg.model+' · float16';const t0=performance.now();
+try{created=await PoseLandmarker.createFromOptions(wasm,{baseOptions:{modelAssetPath:url,delegate:cfg.delegate},runningMode:'VIDEO',numPoses:cfg.maxpose,minPoseDetectionConfidence:.5,minPosePresenceConfidence:.5,minTrackingConfidence:.5});loadedDelegate=cfg.delegate}
+catch(err){if(cfg.delegate!=='GPU')throw err;status('GPU initialization failed. Trying CPU…');created=await PoseLandmarker.createFromOptions(wasm,{baseOptions:{modelAssetPath:url,delegate:'CPU'},runningMode:'VIDEO',numPoses:cfg.maxpose});loadedDelegate='CPU (GPU fallback)'}
+loadMs=performance.now()-t0;pose=created;$('init').textContent=fmt(loadMs,0)+' ms';$('actualDelegate').textContent=loadedDelegate;
+let width=Number(cfg.resolution),height=width===1280?720:width===640?480:240;
+stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'user',width:{ideal:width},height:{ideal:height}}});video.srcObject=stream;await video.play();$('actualRes').textContent=video.videoWidth+' × '+video.videoHeight;
+latencies=[];times=[];personCount=0;lastAttempt=0;lastVideoTime=-1;startedAt=performance.now();session={...cfg,resolutionActual:video.videoWidth+'x'+video.videoHeight,delegateActual:loadedDelegate};active=true;paused=false;$('placeholder').hidden=true;setButtons();status('Running locally. Move in front of the camera to inspect landmarks.');raf=requestAnimationFrame(frame)
+}catch(e){status('Unable to start: '+e.message+'. Check camera permissions, connection, and browser support.',true);await stop();$('start').disabled=false}}
+function save(){const s=stats();if(s.n<10)return;const row={date:new Date().toISOString(),...session,fps:s.fps,avg:s.avg,p95:s.p95,samples:s.n,initMs:loadMs,elapsedSec:(performance.now()-startedAt)/1000,agent:navigator.userAgent};history.unshift(row);try{localStorage.setItem(STORAGE,JSON.stringify(history))}catch{status('Saved for this session but persistent storage is unavailable.',true)}renderHistory();status('Benchmark saved locally. Export CSV to compare devices.')}
+function renderHistory(){const tbody=$('results');tbody.replaceChildren();if(!history.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.className='muted';td.textContent='No benchmarks saved yet.';tr.append(td);tbody.append(tr);return}
+history.forEach(x=>{const tr=document.createElement('tr');[new Date(x.date).toLocaleString(),x.model,x.delegateActual,x.resolutionActual,fmt(x.fps),fmt(x.avg),fmt(x.p95),x.samples].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td)});tbody.append(tr)})}
+function exportCSV(){if(!history.length){status('Save a benchmark before exporting.');return}const fields=['date','model','delegate','delegateActual','resolution','resolutionActual','maxpose','target','fps','avg','p95','samples','initMs','elapsedSec','agent'];const esc=v=>'"'+String(v??'').replaceAll('"','""')+'"';const data=[fields.join(','),...history.map(r=>fields.map(k=>esc(r[k])).join(','))].join('\r\n');const blob=new Blob([data],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='model-lab-benchmarks.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+$('start').onclick=start;$('stop').onclick=()=>{stop();status('Stopped. Camera released.')};$('pause').onclick=()=>{paused=!paused;setButtons();status(paused?'Inference paused; camera remains active.':'Inference resumed.')};$('snapshot').onclick=save;$('export').onclick=exportCSV;$('clear').onclick=()=>{if(!confirm('Delete all saved benchmark results in this browser?'))return;history=[];localStorage.removeItem(STORAGE);renderHistory()};$('target').oninput=()=>{$('targetValue').textContent=$('target').value+' FPS';$('budget').textContent=fmt(1000/Number($('target').value))+' ms'};$('draw').onchange=()=>{if(!$('draw').checked)ctx.clearRect(0,0,overlay.width,overlay.height)};window.addEventListener('pagehide',()=>{stream?.getTracks().forEach(t=>t.stop())});
+if(!navigator.mediaDevices?.getUserMedia){$('start').disabled=true;status('Camera API unavailable. Use a secure HTTPS GitHub Pages URL in a supported browser.',true)}
+diagnostics();renderHistory();plot();
+</script>
+</body></html>
