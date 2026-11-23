@@ -32,12 +32,12 @@ header{display:flex;align-items:center;justify-content:space-between;gap:18px;ma
 <div class="eyebrow">01 / Computer vision benchmark</div>
 <h1>Look under the hood.</h1>
 <p class="lead">Run Google MediaPipe Pose Landmarker on your own device. Change the model, execution backend, resolution, and processing rate, then compare real measurements. Everything runs in this browser.</p>
-<section class="guide"><div class="eyebrow">Guided experiment</div><h2>Which pose model runs faster on this device?</h2><p>Run three models automatically, then compare their actual speeds in a simple chart. Keep the camera pointed at the same scene throughout.</p><div class="instructions"><span>1. Allow camera access</span><span>2. Run the comparison</span><span>3. See what changed</span></div><div class="row"><button id="walkStart">Walk me through the lab</button><button class="primary" id="guided">Compare Lite, Full &amp; Heavy</button><span class="muted" id="guidedStatus">Three 8-second tests, plus loading time</span></div><div id="walkPanel" class="walkPanel" hidden><div class="row between"><strong id="walkTitle"></strong><span class="pill" id="walkCount"></span></div><p id="walkText"></p><div class="row between"><button id="walkPrev">Previous</button><div class="row"><button id="walkClose">Close</button><button class="primary" id="walkNext">Next section</button></div></div></div></section><div class="layout">
+<section class="guide"><div class="eyebrow">Guided experiment</div><h2>Which pose model runs faster on this device?</h2><p>Run three models automatically, then compare their actual speeds in a simple chart. Keep the camera pointed at the same scene throughout.</p><div class="instructions"><span>1. Allow camera access</span><span>2. Run the comparison</span><span>3. See what changed</span></div><div class="row"><button id="walkStart">Walk me through the lab</button><button id="guided">Compare Pose Lite / Full / Heavy</button></div><p class="muted" id="guidedStatus">For Hands Only and Body + Hands, select the detection mode and run the new eight-second test under the camera.</p><div id="walkPanel" class="walkPanel" hidden><div class="row between"><strong id="walkTitle"></strong><span class="pill" id="walkCount"></span></div><p id="walkText"></p><div class="row between"><button id="walkPrev">Previous</button><div class="row"><button id="walkClose">Close</button><button class="primary" id="walkNext">Next section</button></div></div></div></section><div class="layout">
 <div class="stack">
 <section class="panel">
 <div class="panelhead"><h2 class="sectiontitle">Live model inspection</h2><span class="pill" id="liveLabel">Not running</span></div>
 <div class="camera"><video id="video" autoplay playsinline muted></video><canvas id="overlay"></canvas><div class="camtag" id="cameraTag">CAMERA OFF</div><div class="empty" id="placeholder">Enable your camera to inspect model predictions and measure inference time.</div></div>
-<div class="actions"><button class="primary" id="start">Start camera + model</button><button id="pause" disabled>Pause inference</button><button id="stop" disabled>Stop</button><button id="snapshot" disabled>Save benchmark</button></div>
+<div class="actions"><button class="primary" id="quickTest">Run 8-second test + auto-save</button><button id="allModesTest">Compare all 3 modes</button></div><div class="hint" id="testDescription">Uses the selected mode in Experiment Controls, then automatically saves the measurement.</div><div class="status" id="testCountdown" role="status" aria-live="polite">Ready to benchmark</div><div class="actions"><button id="start">Start continuous camera</button><button id="pause" disabled>Pause inference</button><button id="stop" disabled>Stop / cancel</button><button id="snapshot" disabled>Save current run</button></div>
 <div class="status" id="status" role="status" aria-live="polite">Ready. Camera access is requested only when you press Start.</div><p class="tiny">Stand far enough back that your shoulders and hips are visible. The green dots show the coordinates the model predicts, while the timing benchmark works even if nobody is detected.</p>
 <label class="check"><input type="checkbox" id="draw" checked> Draw skeleton and keypoints</label>
 </section>
@@ -115,7 +115,7 @@ function status(msg,error=false){$('status').textContent=msg;$('status').classNa
 function fmt(v,d=1){return Number.isFinite(v)?v.toFixed(d):'—'}
 function percentile(a,p){if(!a.length)return NaN;let x=[...a].sort((a,b)=>a-b);return x[Math.ceil(p*x.length)-1]}
 function stats(){const n=latencies.length;return {n,avg:n?latencies.reduce((a,b)=>a+b,0)/n:NaN,p95:percentile(latencies,.95),fps:times.length>1?(times.length-1)*1000/(times[times.length-1]-times[0]):NaN}}
-function setButtons(){ $('start').disabled=active;$('stop').disabled=!active;$('pause').disabled=!active;$('snapshot').disabled=!active||latencies.length<10;$('pause').textContent=paused?'Resume inference':'Pause inference';$('liveLabel').textContent=active?(paused?'Paused':'Running'):'Not running';$('cameraTag').textContent=active?(paused?'PAUSED':'LIVE / LOCAL'):'CAMERA OFF' }
+function setButtons(){ $('quickTest').disabled=guided;$('allModesTest').disabled=guided;$('start').disabled=active||guided;$('stop').disabled=!active;$('pause').disabled=!active;$('snapshot').disabled=!active||latencies.length<10||guided;$('pause').textContent=paused?'Resume inference':'Pause inference';$('liveLabel').textContent=active?(paused?'Paused':'Running'):'Not running';$('cameraTag').textContent=active?(paused?'PAUSED':'LIVE / LOCAL'):'CAMERA OFF' }
 function readSettings(){return {mode:$('mode').value,model:$('model').value,delegate:$('delegate').value,resolution:$('resolution').value,maxpose:Number($('maxpose').value),target:Number($('target').value)}}
 function plot(){const c=$('chart'),g=c.getContext('2d'),w=c.width,h=c.height;g.clearRect(0,0,w,h);const d=latencies.slice(-120);if(!d.length)return;const ymax=Math.max(40,...d)*1.15;g.strokeStyle='#dce5eb';g.lineWidth=1;for(let i=1;i<4;i++){let y=h*i/4;g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}g.strokeStyle='#158b85';g.lineWidth=3;g.beginPath();d.forEach((v,i)=>{let x=i/Math.max(1,d.length-1)*w,y=h-8-v/ymax*(h-16);i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke();g.font='18px system-ui';g.fillStyle='#78899b';g.fillText(fmt(ymax,0)+' ms',12,25)}
 function update(){const s=stats();$('samples').textContent=s.n+' inference samples';$('fps').textContent=fmt(s.fps);$('avg').textContent=fmt(s.avg);$('p95').textContent=fmt(s.p95);$('people').textContent=active?(session.mode==='hands'?detectedHands+' hands':personCount+(session.mode==='both'?' bodies / '+detectedHands+' hands':'')):'—';$('poseCost').textContent=poseTimes.length?fmt(poseTimes.reduce((a,b)=>a+b,0)/poseTimes.length)+' ms':'—';$('handCost').textContent=handTimes.length?fmt(handTimes.reduce((a,b)=>a+b,0)/handTimes.length)+' ms':'—';$('heap').textContent=performance.memory?fmt(performance.memory.usedJSHeapSize/1048576)+' MiB':'Unavailable';plot()}
@@ -174,7 +174,7 @@ function frame(ts){
   latencies.push(elapsed);times.push(performance.now());
   if(latencies.length>600)latencies.shift();if(times.length>120)times.shift();
   draw(poseResult,handResult);
-  if(ts-lastRender>250){update();lastRender=ts}
+  if(ts-lastRender>250){update();setButtons();lastRender=ts}
  }catch(e){status('Inference error: '+e.message,true);stop()}
 }
 async function stop(){active=false;paused=false;cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(pose){pose.close();pose=null}if(hands){hands.close();hands=null}video.srcObject=null;ctx.clearRect(0,0,overlay.width,overlay.height);$('placeholder').hidden=false;setButtons();update()}
@@ -213,7 +213,7 @@ async function start(){
   raf=requestAnimationFrame(frame);
  }catch(e){const msg=e.message;await stop();status('Unable to start: '+msg+'. Check permissions, network and browser support.',true);$('start').disabled=false}
 }
-function save(){const s=stats();if(s.n<10)return;const row={date:new Date().toISOString(),...session,fps:s.fps,avg:s.avg,p95:s.p95,samples:s.n,initMs:loadMs,elapsedSec:(performance.now()-startedAt)/1000,agent:navigator.userAgent};history.unshift(row);selectedBenchmarks.add(runKey(row));try{localStorage.setItem(STORAGE,JSON.stringify(history))}catch{status('Saved for this session but persistent storage is unavailable.',true)}renderHistory();renderComparison();status('Benchmark saved locally. Export CSV to compare devices.')}
+function save(){const s=stats();if(s.n<5){status('Not enough frames to save. Keep the camera running a little longer.',true);return false;}const row={date:new Date().toISOString(),...session,fps:s.fps,avg:s.avg,p95:s.p95,samples:s.n,initMs:loadMs,elapsedSec:(performance.now()-startedAt)/1000,agent:navigator.userAgent};history.unshift(row);selectedBenchmarks.add(runKey(row));try{localStorage.setItem(STORAGE,JSON.stringify(history))}catch{status('Saved for this session but persistent storage is unavailable.',true)}renderHistory();renderComparison();status('Benchmark saved locally. Export CSV to compare devices.');return true}
 function renderHistory(){const tbody=$('results');tbody.replaceChildren();if(!history.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.className='muted';td.textContent='No benchmarks saved yet.';tr.append(td);tbody.append(tr);return}
 history.forEach(x=>{const tr=document.createElement('tr');[new Date(x.date).toLocaleString(),(x.mode==='hands'?'Hands only':x.mode==='both'?x.model+' + hands':x.model),x.delegateActual,x.resolutionActual,fmt(x.fps),fmt(x.avg),fmt(x.p95),x.samples].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td)});tbody.append(tr)})}
 
@@ -273,27 +273,50 @@ function renderComparison(){
  }else desc.append('Select at least two runs for a direct comparison.');
 }
 const nap=ms=>new Promise(r=>setTimeout(r,ms));
-async function guidedTest(){
- if(guided)return;guided=true;abortGuided=false;$('guided').disabled=true;
- try{
-  if(active)await stop();
-  $('mode').value='pose';$('mode').dispatchEvent(new Event('change'));$('delegate').value='GPU';$('resolution').value='640';$('maxpose').value='1';$('target').value='30';$('target').dispatchEvent(new Event('input'));
-  for(const [i,m] of ['lite','full','heavy'].entries()){
-   if(abortGuided)break;
-   $('model').value=m;$('guidedStatus').textContent='Loading '+m+' ('+(i+1)+'/3)…';
-   await start();if(!active)throw Error('Model '+m+' failed to start. Check camera status.');
-   for(let t=8;t>0;t--){if(abortGuided)break;$('guidedStatus').textContent='Testing '+m.toUpperCase()+' · '+t+' seconds';await nap(1000)}
-   if(abortGuided)break;
-   if(latencies.length>=10)save();else throw Error('Not enough frames to measure '+m);
-   await stop();
-  }
-  if(!abortGuided){$('guidedStatus').textContent='Comparison complete. See chart below.';$('comparison').scrollIntoView({behavior:'smooth',block:'center'})}
- }catch(e){$('guidedStatus').textContent='Test interrupted: '+e.message}
- finally{guided=false;$('guided').disabled=false;if(active)await stop()}
+
+async function measureEightSeconds(mode,model,i,total){
+ if(active)await stop();
+ $('mode').value=mode;$('mode').dispatchEvent(new Event('change'));
+ if(mode!=='hands')$('model').value=model;
+ const label=mode==='hands'?'Hands only':mode==='both'?'Body + Hands':'Pose '+model;
+ $('testCountdown').textContent='Loading '+label+' ('+i+'/'+total+')…';
+ await start();
+ if(!active)throw Error('Unable to start '+label+'. Check camera and status.');
+ await nap(500);latencies=[];times=[];poseTimes=[];handTimes=[];
+ for(let t=8;t>0;t--){
+  if(abortGuided)throw Error('Cancelled');
+  $('testCountdown').textContent='Testing '+label+' · '+t+' seconds remaining';
+  await nap(1000);
+ }
+ if(abortGuided)throw Error('Cancelled');
+ if(stats().n<5)throw Error('Not enough camera frames captured. Check camera access.');
+ if(!save())throw Error('Could not save benchmark');
+ $('testCountdown').textContent='Saved '+label+' · '+stats().n+' frames';
+ await stop();
 }
+async function runSeries(series){
+ if(guided)return;
+ guided=true;abortGuided=false;
+ $('guided').disabled=true;$('quickTest').disabled=true;$('allModesTest').disabled=true;
+ const prior=readSettings();
+ try{
+  for(let i=0;i<series.length;i++)await measureEightSeconds(series[i].mode,series[i].model,i+1,series.length);
+  $('testCountdown').textContent='Done: '+series.length+' saved benchmark(s). See comparison below.';
+  $('comparePreset').value='latest';selectPreset('latest');$('comparison').scrollIntoView({behavior:'smooth',block:'center'});
+ }catch(err){$('testCountdown').textContent='Test stopped: '+err.message;status(err.message,true)}
+ finally{
+  if(active)await stop();
+  for(const key of ['mode','model','delegate','resolution','maxpose','target'])$(key).value=prior[key];
+  $('mode').dispatchEvent(new Event('change'));$('target').dispatchEvent(new Event('input'));
+  guided=false;$('guided').disabled=false;setButtons();
+ }
+}
+async function guidedTest(){const s=readSettings();await runSeries(['lite','full','heavy'].map(model=>({mode:'pose',model})))}
+async function quickTest(){const s=readSettings();await runSeries([{mode:s.mode,model:s.model}])}
+async function allModesTest(){const s=readSettings();await runSeries([{mode:'pose',model:s.model},{mode:'hands',model:s.model},{mode:'both',model:s.model}])}
 function exportCSV(){if(!history.length){status('Save a benchmark before exporting.');return}const fields=['date','mode','model','delegate','delegateActual','resolution','resolutionActual','maxpose','target','fps','avg','p95','samples','initMs','elapsedSec','agent'];const esc=v=>'"'+String(v??'').replaceAll('"','""')+'"';const data=[fields.join(','),...history.map(r=>fields.map(k=>esc(r[k])).join(','))].join('\r\n');const blob=new Blob([data],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='model-lab-benchmarks.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-$('mode').onchange=()=>{const m=$('mode').value;$('model').disabled=m==='hands';$('maxpose').disabled=m==='hands';$('modeHelp').textContent=m==='hands'?'Tracks up to two hands and 21 landmarks per hand. Pose inference is not run.':m==='both'?'Runs body pose and hand landmarks on each sampled frame. Expect a higher total cost because both models execute.':'Tracks 33 body landmarks per person. Hand inference is not run.'};$('compareMetric').onchange=renderComparison;$('comparePreset').onchange=()=>{if($('comparePreset').value!=='custom')selectPreset($('comparePreset').value)};$('selectNone').onclick=()=>{selectedBenchmarks.clear();selectionTouched=true;$('comparePreset').value='custom';renderComparison()};$('guided').onclick=guidedTest;$('start').onclick=start;$('stop').onclick=()=>{if(guided)abortGuided=true;stop();status('Stopped. Camera released.')};$('pause').onclick=()=>{paused=!paused;setButtons();status(paused?'Inference paused; camera remains active.':'Inference resumed.')};$('snapshot').onclick=save;$('export').onclick=exportCSV;$('clear').onclick=()=>{if(!confirm('Delete all saved benchmark results in this browser?'))return;history=[];selectedBenchmarks.clear();selectionTouched=false;localStorage.removeItem(STORAGE);renderHistory();renderComparison()};$('target').oninput=()=>{$('targetValue').textContent=$('target').value+' FPS';$('budget').textContent=fmt(1000/Number($('target').value))+' ms'};$('draw').onchange=()=>{if(!$('draw').checked)ctx.clearRect(0,0,overlay.width,overlay.height)};window.addEventListener('pagehide',()=>{stream?.getTracks().forEach(t=>t.stop())});
-if(!navigator.mediaDevices?.getUserMedia){$('start').disabled=true;status('Camera API unavailable. Use a secure HTTPS GitHub Pages URL in a supported browser.',true)}
+$('mode').onchange=()=>{const m=$('mode').value;$('model').disabled=m==='hands';$('maxpose').disabled=m==='hands';$('modeHelp').textContent=m==='hands'?'Tracks up to two hands and 21 landmarks per hand. Pose inference is not run.':m==='both'?'Runs body pose and hand landmarks on each sampled frame. Expect a higher total cost because both models execute.':'Tracks 33 body landmarks per person. Hand inference is not run.'};$('compareMetric').onchange=renderComparison;$('comparePreset').onchange=()=>{if($('comparePreset').value!=='custom')selectPreset($('comparePreset').value)};$('selectNone').onclick=()=>{selectedBenchmarks.clear();selectionTouched=true;$('comparePreset').value='custom';renderComparison()};$('quickTest').onclick=quickTest;$('allModesTest').onclick=allModesTest;$('guided').onclick=guidedTest;$('start').onclick=start;$('stop').onclick=()=>{if(guided){abortGuided=true;$('testCountdown').textContent='Cancelling…';}else{stop();status('Stopped. Camera released.')}};$('pause').onclick=()=>{paused=!paused;setButtons();status(paused?'Inference paused; camera remains active.':'Inference resumed.')};$('snapshot').onclick=save;$('export').onclick=exportCSV;$('clear').onclick=()=>{if(!confirm('Delete all saved benchmark results in this browser?'))return;history=[];selectedBenchmarks.clear();selectionTouched=false;localStorage.removeItem(STORAGE);renderHistory();renderComparison()};$('target').oninput=()=>{$('targetValue').textContent=$('target').value+' FPS';$('budget').textContent=fmt(1000/Number($('target').value))+' ms'};$('draw').onchange=()=>{if(!$('draw').checked)ctx.clearRect(0,0,overlay.width,overlay.height)};window.addEventListener('pagehide',()=>{stream?.getTracks().forEach(t=>t.stop())});
+if(!navigator.mediaDevices?.getUserMedia){$('quickTest').disabled=true;$('allModesTest').disabled=true;$('guided').disabled=true;$('start').disabled=true;status('Camera API unavailable. Use a secure HTTPS GitHub Pages URL in a supported browser.',true)}
 
 const walk=[
  {id:'controlsSection',title:'Choose what the model detects',text:'Body pose predicts 33 joint landmarks. Hands-only estimates 21 points on each detected hand. Combined mode runs both detectors. Adding a second detector generally increases compute and latency, but can capture detail that Pose alone misses.'},
