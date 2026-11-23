@@ -38,7 +38,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:18px;ma
 <div class="panelhead"><h2 class="sectiontitle">Live model inspection</h2><span class="pill" id="liveLabel">Not running</span></div>
 <div class="camera"><video id="video" autoplay playsinline muted></video><canvas id="overlay"></canvas><div class="camtag" id="cameraTag">CAMERA OFF</div><div class="empty" id="placeholder">Enable your camera to inspect model predictions and measure inference time.</div></div>
 <div class="actions"><button class="primary" id="start">Start camera + model</button><button id="pause" disabled>Pause inference</button><button id="stop" disabled>Stop</button><button id="snapshot" disabled>Save benchmark</button></div>
-<div class="status" id="status" role="status" aria-live="polite">Ready. Camera access is requested only when you press Start.</div>
+<div class="status" id="status" role="status" aria-live="polite">Ready. Camera access is requested only when you press Start.</div><p class="tiny">Stand far enough back that your shoulders and hips are visible. The green dots show the coordinates the model predicts, while the timing benchmark works even if nobody is detected.</p>
 <label class="check"><input type="checkbox" id="draw" checked> Draw skeleton and keypoints</label>
 </section>
 <section class="panel">
@@ -110,12 +110,36 @@ function readSettings(){return {model:$('model').value,delegate:$('delegate').va
 function plot(){const c=$('chart'),g=c.getContext('2d'),w=c.width,h=c.height;g.clearRect(0,0,w,h);const d=latencies.slice(-120);if(!d.length)return;const ymax=Math.max(40,...d)*1.15;g.strokeStyle='#dce5eb';g.lineWidth=1;for(let i=1;i<4;i++){let y=h*i/4;g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}g.strokeStyle='#158b85';g.lineWidth=3;g.beginPath();d.forEach((v,i)=>{let x=i/Math.max(1,d.length-1)*w,y=h-8-v/ymax*(h-16);i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke();g.font='18px system-ui';g.fillStyle='#78899b';g.fillText(fmt(ymax,0)+' ms',12,25)}
 function update(){const s=stats();$('samples').textContent=s.n+' inference samples';$('fps').textContent=fmt(s.fps);$('avg').textContent=fmt(s.avg);$('p95').textContent=fmt(s.p95);$('people').textContent=active?personCount:'—';$('heap').textContent=performance.memory?fmt(performance.memory.usedJSHeapSize/1048576)+' MiB':'Unavailable';plot()}
 function diagnostics(){let d=[['Platform',navigator.userAgentData?.platform||navigator.platform||'Unknown'],['Logical CPU cores',navigator.hardwareConcurrency??'Unavailable'],['Reported device memory',navigator.deviceMemory?navigator.deviceMemory+' GiB (approx.)':'Unavailable'],['GPU API (WebGL)',!!document.createElement('canvas').getContext('webgl2')?'WebGL2 available':'Unavailable'],['WebGPU API',navigator.gpu?'Available (support varies)':'Unavailable'],['Browser',navigator.userAgent],['Connection','Not measured']];$('specs').replaceChildren();for(let [a,b] of d){let e=document.createElement('div');e.className='spec';let l=document.createElement('span'),v=document.createElement('strong');l.textContent=a;v.textContent=b;e.append(l,v);$('specs').append(e)}}
-function draw(result){if(!active||!video.videoWidth)return;const rect=video.getBoundingClientRect(),cw=rect.width,ch=rect.height;const pixelRatio=Math.min(window.devicePixelRatio||1,2);if(overlay.width!==Math.round(cw*pixelRatio)||overlay.height!==Math.round(ch*pixelRatio)){overlay.width=Math.round(cw*pixelRatio);overlay.height=Math.round(ch*pixelRatio)}
-ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0);ctx.clearRect(0,0,cw,ch);if(!$('draw').checked)return;
-const sx=Math.min(cw/video.videoWidth,ch/video.videoHeight),offX=(cw-video.videoWidth*sx)/2,offY=(ch-video.videoHeight*sx)/2;ctx.save();ctx.translate(offX,offY);ctx.scale(video.videoWidth*sx,video.videoHeight*sx);
-for(const marks of result.landmarks||[]){drawing.drawConnectors(marks,PoseLandmarker.POSE_CONNECTIONS,{color:'#63f6c4',lineWidth:2/(video.videoWidth*sx)});drawing.drawLandmarks(marks,{color:'#ffffff',fillColor:'#0c9d90',radius:3/(video.videoWidth*sx)});}ctx.restore()}
+function draw(result){
+ if(!active||!video.videoWidth)return;
+ const cw=overlay.clientWidth,ch=overlay.clientHeight,dpr=Math.min(devicePixelRatio||1,2);
+ if(overlay.width!==Math.round(cw*dpr)||overlay.height!==Math.round(ch*dpr)){
+  overlay.width=Math.round(cw*dpr);overlay.height=Math.round(ch*dpr);
+ }
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,cw,ch);
+ if(!$('draw').checked)return;
+ // Draw in CSS pixels, using the same object-fit:contain geometry as the video.
+ // CSS mirrors both video and overlay, so no extra coordinate flip is needed.
+ const scale=Math.min(cw/video.videoWidth,ch/video.videoHeight);
+ const drawnW=video.videoWidth*scale,drawnH=video.videoHeight*scale;
+ const left=(cw-drawnW)/2,top=(ch-drawnH)/2;
+ const project=p=>({x:left+p.x*drawnW,y:top+p.y*drawnH});
+ for(const landmarks of result.landmarks||[]){
+  ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#5ef7c6';ctx.lineWidth=3;
+  for(const connection of PoseLandmarker.POSE_CONNECTIONS){
+   const a=landmarks[connection.start],b=landmarks[connection.end];
+   if(!a||!b||(a.visibility??1)<.35||(b.visibility??1)<.35)continue;
+   const x=project(a),y=project(b);ctx.beginPath();ctx.moveTo(x.x,x.y);ctx.lineTo(y.x,y.y);ctx.stroke();
+  }
+  for(const p of landmarks){
+   if((p.visibility??1)<.35)continue;
+   const v=project(p);ctx.beginPath();ctx.arc(v.x,v.y,4,0,2*Math.PI);
+   ctx.fillStyle='#07bc9b';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.4;ctx.stroke();
+  }
+ }
+}
 function frame(ts){if(!active)return;raf=requestAnimationFrame(frame);if(paused||!pose||video.readyState<2)return;const limit=1000/readSettings().target;if(ts-lastAttempt<limit)return;if(video.currentTime===lastVideoTime)return;lastAttempt=ts;lastVideoTime=video.currentTime;
-try{const t0=performance.now(),result=pose.detectForVideo(video,t0),duration=performance.now()-t0;personCount=result.landmarks?.length||0;latencies.push(duration);times.push(performance.now());if(latencies.length>600)latencies.shift();if(times.length>120)times.shift();draw(result);if(ts-lastRender>250){update();lastRender=ts;}}catch(e){status('Inference error: '+e.message,true);stop()}}
+try{const t0=performance.now(),result=pose.detectForVideo(video,t0),duration=performance.now()-t0;personCount=result.landmarks?.length||0;$('cameraTag').textContent=personCount?'PERSON DETECTED · '+personCount+' · '+result.landmarks[0].length+' LANDMARKS':'NO PERSON DETECTED';latencies.push(duration);times.push(performance.now());if(latencies.length>600)latencies.shift();if(times.length>120)times.shift();draw(result);if(ts-lastRender>250){update();lastRender=ts;}}catch(e){status('Inference error: '+e.message,true);stop()}}
 async function stop(){active=false;paused=false;cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(pose){pose.close();pose=null}video.srcObject=null;ctx.clearRect(0,0,overlay.width,overlay.height);$('placeholder').hidden=false;setButtons();update()}
 async function start(){if(active)return;const cfg=readSettings();$('start').disabled=true;status('Loading model and requesting camera…');let created=null;try{
 const wasm=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
