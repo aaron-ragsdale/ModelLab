@@ -38,7 +38,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:18px;ma
 <div class="panelhead"><h2 class="sectiontitle">Live model inspection</h2><span class="pill" id="liveLabel">Not running</span></div>
 <div class="camera"><video id="video" autoplay playsinline muted></video><canvas id="overlay"></canvas><div class="camtag" id="cameraTag">CAMERA OFF</div><div class="empty" id="placeholder">Enable your camera to inspect model predictions and measure inference time.</div></div>
 <div class="actions" id="testActions"><button class="primary" id="quickTest">Run selected · 8 sec</button><button id="allModesTest">Compare 3 tracking modes</button><button id="guided">Compare Pose Lite / Full / Heavy</button></div><div class="hint" id="testDescription">Uses the selected mode in Experiment Controls, then automatically saves the measurement.</div><div class="status" id="testCountdown" role="status" aria-live="polite">Ready to benchmark</div><div class="actions"><button id="start">Start continuous camera</button><button id="pause" disabled>Pause inference</button><button id="stop" disabled>Stop / cancel</button><button id="snapshot" disabled>Save current run</button></div>
-<div class="status" id="status" role="status" aria-live="polite">Ready. Camera access is requested only when you press Start.</div><p class="tiny">Stand far enough back that your shoulders and hips are visible. The green dots show the coordinates the model predicts, while the timing benchmark works even if nobody is detected.</p>
+<div class="status" id="status" role="status" aria-live="polite">Ready. Camera access is requested only when you press Start.</div><p class="tiny">Show your body or hands depending on the selected mode. Green landmarks are from Pose; orange landmarks are from Hands. Red, blue, and gold dots are the three filters when a tracked landmark is visible.</p>
 <label class="check"><input type="checkbox" id="draw" checked> Draw skeleton and keypoints</label>
 </section>
 <section class="panel">
@@ -201,7 +201,7 @@ function drawDots(){
   const x=left+p.x*w,y=top+p.y*height;
   ctx.beginPath();ctx.arc(x,y,i===0?9:7,0,2*Math.PI);ctx.fillStyle=filterColors[i];ctx.fill();
   ctx.strokeStyle='#101f30';ctx.lineWidth=2;ctx.stroke();
-  ctx.fillStyle='#101f30';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText(['R','E','€'][i],x,y+4);
+  ctx.fillStyle='#101f30';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText(['R','E','1€'][i],x,y+4);
  });
 }
 function plotSeries(canvasId,suffix){
@@ -231,7 +231,7 @@ function draw(result,handResult){
   overlay.width=Math.round(cw*dpr);overlay.height=Math.round(ch*dpr);
  }
  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,cw,ch);
- if(!$('draw').checked)return;
+ if(!$('draw').checked){drawDots();return;}
  // Draw in CSS pixels, using the same object-fit:contain geometry as the video.
  // CSS mirrors both video and overlay, so no extra coordinate flip is needed.
  const scale=Math.min(cw/video.videoWidth,ch/video.videoHeight);
