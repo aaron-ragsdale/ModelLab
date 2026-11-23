@@ -41,6 +41,14 @@ Select **Walk me through the lab** near the top of the page. Each of the eight s
 
 Changes to model, delegate, camera resolution, and pose count take effect when you stop and restart. The target FPS slider works live.
 
+## One-click 8-second benchmarks
+
+Under **Experiment Controls**, choose **Body pose only**, **Hands only**, or **Body pose + hands**. Then, under the camera, select **Run 8-second test + auto-save**. Model Lab loads the selected pipeline, measures eight seconds, saves the run automatically, and updates the comparison chart. You do not need to manually press Save for this workflow.
+
+Use **Compare all 3 modes** to automatically test Body Pose, Hands Only, and Body + Hands sequentially, using the selected pose model and other settings. The top **Compare Pose Lite / Full / Heavy** button remains available for pose-model size comparisons.
+
+For longer unscripted measurements, choose **Start continuous camera**, then **Save current run** after sufficient inference samples. **Stop / cancel** stops a manual camera run or cancels an automated sequence. Benchmark data stays local to the browser.
+
 ## Compare any saved benchmarks
 
 The **Compare saved benchmarks** chart can compare Body Pose, Hands Only, Body + Hands, and runs using different CPU/GPU backends.
