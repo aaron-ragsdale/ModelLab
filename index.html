@@ -463,28 +463,58 @@ $('filterLandmark').onchange=()=>{resetFilterState();const isHand=$('filterLandm
 $('quickTest').onclick=quickTest;$('allModesTest').onclick=allModesTest;$('guided').onclick=guidedTest;$('start').onclick=start;$('stop').onclick=()=>{if(guided){abortGuided=true;$('testCountdown').textContent='Cancelling…';}else{stop();status('Stopped. Camera released.')}};$('pause').onclick=()=>{paused=!paused;setButtons();status(paused?'Inference paused; camera remains active.':'Inference resumed.')};$('snapshot').onclick=save;$('export').onclick=exportCSV;$('clear').onclick=()=>{if(!confirm('Delete all saved benchmark results in this browser?'))return;history=[];selectedBenchmarks.clear();selectionTouched=false;localStorage.removeItem(STORAGE);renderHistory();renderComparison()};$('target').oninput=()=>{$('targetValue').textContent=$('target').value+' FPS';$('budget').textContent=fmt(1000/Number($('target').value))+' ms'};$('draw').onchange=()=>{if(!$('draw').checked)ctx.clearRect(0,0,overlay.width,overlay.height)};window.addEventListener('pagehide',()=>{stream?.getTracks().forEach(t=>t.stop())});
 if(!navigator.mediaDevices?.getUserMedia){$('quickTest').disabled=true;$('allModesTest').disabled=true;$('guided').disabled=true;$('start').disabled=true;status('Camera API unavailable. Use a secure HTTPS GitHub Pages URL in a supported browser.',true)}
 
-const walk=[
- {id:'controlsSection',title:'Choose what the model detects',text:'Body pose predicts 33 joint landmarks. Hands-only estimates 21 points on each detected hand. Combined mode runs both detectors. Adding a second detector generally increases compute and latency, but can capture detail that Pose alone misses.'},
- {id:'controlsSection',title:'Model size changes speed versus detail',text:'Pose Lite, Full and Heavy are different pretrained pose models. Lite often runs faster, while Full or Heavy may improve tracking in difficult poses. The selector has no effect in Hands-only mode. Compare measured latency AND how stable the skeleton looks.'},
- {id:'controlsSection',title:'CPU versus GPU',text:'GPU can accelerate parallel numerical operations but has startup overhead and browser-specific compatibility. CPU is often more predictable across school laptops. Compare both using the same scene and camera settings. A GPU setting does not guarantee a discrete graphics card.'},
- {id:'controlsSection',title:'Resolution, people and target FPS',text:'Camera resolution changes input size and capture/preprocessing work, but each model may internally resize its input. Tracking more people can add work. Target FPS caps how often the app tries to infer; it does not increase the model’s physical maximum speed.'},
- {id:'metricsSection',title:'Understand the benchmark numbers',text:'Mean milliseconds is the average time spent computing the selected pipeline per frame. P95 is the slower end of typical samples (95% at or below this number). Processed FPS reports completed model runs per second, not video display FPS. Combined mode shows Pose and Hand durations separately.'},
- {id:'compareSection',title:'Compare models fairly',text:'Save any experiments then select their checkboxes in the comparison panel. Switch between mean inference time, P95, or processed FPS. Compare Pose, Hands, combined tracking, and CPU/GPU runs. The chart warns when camera resolution, backend, or other settings are not matched. Shorter latency is faster, not necessarily more accurate.'},
- {id:'deviceSection',title:'Your hardware matters',text:'CPU cores and available browser features help explain differences across laptops and iPads. Exact RAM consumed by a MediaPipe model is not directly available from most browsers. Optional JS heap readings exclude GPU and WebAssembly memory.'},
- {id:'pipelineSection',title:'Inspect what is actually running',text:'This panel records the active task, landmarks per detection, actual camera dimensions and model initialization time. Model initialization includes downloads/cache and setup, so do not mistake it for per-frame inference cost.'}
-];
-function showWalk(){
- const w=walk[walkStep];$('walkPanel').hidden=false;$('walkTitle').textContent=w.title;$('walkCount').textContent=(walkStep+1)+' / '+walk.length;$('walkText').textContent=w.text;
- document.querySelectorAll('.walkTarget').forEach(el=>el.classList.remove('walkTarget'));
- const element=$(w.id);element?.classList.add('walkTarget');if(walkStep>0)element?.scrollIntoView({behavior:'smooth',block:'center'});
- $('walkPrev').disabled=walkStep===0;$('walkNext').textContent=walkStep===walk.length-1?'Finish':'Next section';
-}
-function closeWalk(){ $('walkPanel').hidden=true;document.querySelectorAll('.walkTarget').forEach(el=>el.classList.remove('walkTarget')); }
-$('walkStart').onclick=()=>{walkStep=0;showWalk();};
-$('walkPrev').onclick=()=>{walkStep=Math.max(0,walkStep-1);showWalk();};
-$('walkNext').onclick=()=>{if(walkStep===walk.length-1){closeWalk();return}walkStep++;showWalk();};
-$('walkClose').onclick=closeWalk;
 
+const walk=[
+ {id:'testActions',title:'Run an experiment',text:'These are your three automatic tests. Run selected tests any detection mode for eight seconds. Compare 3 tracking modes runs Body, Hands, and Both. Compare Pose Lite / Full / Heavy changes pose model size. Each result is saved to your browser.',tip:'Changing only one variable at a time makes the comparison easier to interpret.'},
+ {id:'controlsSection',title:'Decide what to detect',text:'Choose body pose, hands only, or both. Body predicts 33 joints, while Hands estimates 21 points on each visible hand. Running both executes two networks sequentially, which will usually take more processing time.',tip:'To test ShotMaker, compare Pose Full against Pose Full + Hands.'},
+ {id:'controlsSection',title:'Choose computation and camera settings',text:'Lite, Full and Heavy are distinct model sizes. CPU and GPU are different execution delegates. Requested camera resolution affects video input but may not change the neural network input tensor. Target FPS caps how frequently inference is attempted, not the camera display rate.',tip:'A high target FPS does not force a slow model to run faster.'},
+ {id:'metricsSection',title:'Measure what your hardware actually does',text:'The numbers are real timings from this browser, not simulations. Mean and P95 report the selected processing pipeline. In combined mode we show pose and hand timings separately. Processed FPS measures finished model calls, not screen redraws.',tip:'Shorter inference time is faster. P95 shows slower typical frames.'},
+ {id:'filterSection',title:'Watch tracking jitter and lag',text:'Select a wrist or fingertip, then compare Raw (red), EMA (blue), and adaptive One Euro (gold). Adjust smoothing and view the synchronized position and velocity traces. All three are computed from the SAME measured landmark.',tip:'More smoothing can reduce stationary jitter while delaying quick movement.'},
+ {id:'filterSection',title:'Run the movement challenge',text:'Start continuous camera tracking, select a visible landmark, then launch the movement experiment. Hold still, move quickly, stop and reverse. The lab calculates stationary X jitter from live measurements, and the graphs show differences during fast movement.',tip:'The raw model is only a reference, not ground truth for absolute lag or overshoot.'},
+ {id:'compareSection',title:'Interpret experiments side by side',text:'Select saved runs to compare mean processing time, P95 time, or processed FPS. The chart warns when resolutions, delegates, target rates, or devices differ. An inference benchmark alone cannot tell you which model is more accurate.',tip:'Use the same scene and settings for a fair comparison.'},
+ {id:'deviceSection',title:'Understand your device limitations',text:'The browser can report limited hardware capabilities. Model RAM, GPU memory and full system memory are not reliably available through browser APIs. Use device comparisons to find realistic performance limits.',tip:'A laptop with 8 GB of RAM can still run small pose models well.'},
+ {id:'pipelineSection',title:'See which pipeline is running',text:'Inspect the actual detector type, expected landmarks, camera dimensions and initialization time. Initial loading may include downloads and cache setup, so it is separate from per-frame inference.',tip:'After the walkthrough, return to the Latency & Filtering Lab to experiment.'}
+];
+let tourVisible=false;
+function positionTour(){
+ if(!tourVisible)return;
+ const target=$(walk[walkStep].id),spot=$('tourSpotlight'),card=$('tourCard');
+ if(!target)return;
+ const r=target.getBoundingClientRect(),pad=7;
+ const top=Math.max(5,r.top-pad),left=Math.max(5,r.left-pad),width=Math.min(innerWidth-left-5,r.width+pad*2),height=Math.min(innerHeight-top-5,r.height+pad*2);
+ Object.assign(spot.style,{top:top+'px',left:left+'px',width:width+'px',height:height+'px'});
+ const cardWidth=Math.min(400,innerWidth-28),cardHeight=card.offsetHeight||250;
+ const toRight=r.right+18+cardWidth<innerWidth;
+ const toLeft=r.left-18-cardWidth>0;
+ let cx=toRight?r.right+18:toLeft?r.left-cardWidth-18:Math.max(14,(innerWidth-cardWidth)/2);
+ let cy=(toRight||toLeft)?Math.max(12,Math.min(innerHeight-cardHeight-12,r.top)):r.bottom+15;
+ if(cy+cardHeight>innerHeight-10)cy=Math.max(12,r.top-cardHeight-15);
+ cx=Math.max(14,Math.min(innerWidth-cardWidth-14,cx));
+ card.style.left=cx+'px';card.style.top=cy+'px';
+}
+function showWalk(){
+ const w=walk[walkStep];tourVisible=true;
+ $('tourCard').hidden=false;$('tourSpotlight').hidden=false;
+ $('walkCount').textContent='STEP '+(walkStep+1)+' OF '+walk.length;
+ $('walkTitle').textContent=w.title;$('walkText').textContent=w.text+' '+w.tip;
+ $('walkProgress').style.width=((walkStep+1)/walk.length*100)+'%';
+ $('walkPrev').disabled=walkStep===0;$('walkNext').textContent=walkStep===walk.length-1?'Finish walkthrough':'Continue';
+ // Scroll each relevant section into view before transitioning the spotlight.
+ const element=$(w.id);
+ element?.scrollIntoView({behavior:'smooth',block:'center'});
+ positionTour();
+ setTimeout(positionTour,180);setTimeout(positionTour,430);
+}
+function closeWalk(){
+ tourVisible=false;$('tourCard').hidden=true;$('tourSpotlight').hidden=true;
+}
+$('walkStart').onclick=()=>{walkStep=0;showWalk()};
+$('walkPrev').onclick=()=>{walkStep=Math.max(0,walkStep-1);showWalk()};
+$('walkNext').onclick=()=>{if(walkStep===walk.length-1)closeWalk();else{walkStep++;showWalk()}};
+$('walkClose').onclick=closeWalk;
+window.addEventListener('resize',positionTour);
+window.addEventListener('scroll',positionTour,{passive:true});
+window.addEventListener('keydown',e=>{if(!tourVisible)return;if(e.key==='Escape')closeWalk();if(e.key==='ArrowRight')$('walkNext').click();if(e.key==='ArrowLeft')$('walkPrev').click()});
 diagnostics();renderHistory();renderComparison();plot();
 </script>
 </body></html>
