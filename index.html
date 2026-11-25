@@ -109,6 +109,25 @@ header{display:flex;align-items:center;justify-content:space-between;gap:18px;ma
 <div id="specs"></div>
 <div class="notes">Browser RAM and GPU memory usage are not generally exposed reliably. Where available, the page reports JavaScript heap statistics only; these do <b>not</b> represent the MediaPipe model's total memory footprint.</div>
 </section>
+<section class="panel" id="trainingSection" style="margin:20px 0">
+<div class="panelhead"><h2 class="sectiontitle">Train a custom controller model</h2><span class="pill">Local ML</span></div>
+<p>Choose a detector and train your own pose, gesture or movement classes. Use the camera controls above with matching detector settings. Include a neutral class and record varied examples.</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+<label>Landmarker<select id="ml-mode"><option value="pose">Full-body pose</option><option value="hands">Hand Landmarker</option><option value="both">Pose + hands</option></select></label>
+<label>Pose model<select id="ml-pose"><option value="full">Full</option><option value="lite">Lite</option><option value="heavy">Heavy</option></select></label>
+<label>Recognition<select id="ml-kind"><option value="static">Static pose (1 frame)</option><option value="dynamic">Movement sequence</option></select></label>
+<label>Movement window (ms)<select id="ml-window"><option >100</option><option >150</option><option >200</option><option selected>300</option><option >400</option><option >500</option><option >750</option><option >1000</option><option >1500</option><option >2000</option></select></label>
+</div>
+<p class="tiny">Temporal inputs are resampled to 30 Hz. Window length is fixed when training; prediction stride and confidence can be adjusted afterward. A dynamic take captures one movement after a countdown.</p>
+<label>Class names (one per line)<textarea id="ml-labels" rows="4" style="display:block;width:100%;max-width:450px">Neutral
+Class 1
+Class 2</textarea></label>
+<div class="actions" style="margin:12px 0"><select id="ml-class" aria-label="Class to record"></select><button id="ml-record">Record / stop take</button><button id="ml-clear">Clear dataset</button><button class="primary" id="ml-train">Train model</button></div>
+<p id="ml-counts" class="tiny"></p><div class="status" id="ml-status" role="status">Ready. Start the matching camera mode first.</div>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:12px 0"><label>Prediction stride (30 Hz units)<select id="ml-stride"><option>1</option><option>2</option><option>3</option><option>6</option></select></label><label>Minimum vote score (%) <input id="ml-threshold" type="number" min="0" max="100" value="85" style="width:80px"></label></div>
+<div class="status">Live prediction: <strong id="ml-prediction">—</strong></div>
+<div class="actions" style="margin-top:12px"><button id="ml-export" disabled>Download trained model</button><button id="ml-dataset">Download training data</button><label>Import model <input id="ml-import" type="file" accept=".json,application/json"></label></div>
+<p class="tiny">Models contain learned trees, class names and detector/window configuration. No video is saved. Raw normalized coordinates retain camera-relative direction; train in varied positions and lighting. Evaluation holds out entire takes, not adjacent frames.</p></section>
 <section class="panel" id="pipelineSection">
 <div class="panelhead"><h2 class="sectiontitle">Model and pipeline</h2><span class="pill">Inspect</span></div>
 <div id="pipeline">
@@ -131,9 +150,11 @@ header{display:flex;align-items:center;justify-content:space-between;gap:18px;ma
 <script type="module">
 import {PoseLandmarker,HandLandmarker,FilesetResolver,DrawingUtils} from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm';
 const $=id=>document.getElementById(id), video=$('video'), overlay=$('overlay'), ctx=overlay.getContext('2d'), drawing=new DrawingUtils(ctx);
+import {mountTraining} from './training-lab.js';
 const models={lite:'pose_landmarker_lite',full:'pose_landmarker_full',heavy:'pose_landmarker_heavy'};
 const base='https://storage.googleapis.com/mediapipe-models/pose_landmarker/';
 let pose=null,hands=null,stream=null,active=false,paused=false,raf=0,lastAttempt=0,lastVideoTime=-1,lastRender=0,latencies=[],times=[],personCount=0,startedAt=0,loadedDelegate='',loadMs=0,session={};
+const training=mountTraining(()=>({...session,active,paused}));
 const STORAGE='oss-model-lab-bench-v1';
 let guided=false,abortGuided=false,poseTimes=[],handTimes=[],detectedHands=0,walkStep=0;const filterColors=['#ff6b63','#4b9fff','#e1b43a'];
 let filterState=null,filterSamples=[],lastFilterDraw=0,experiment=null;
@@ -279,11 +300,12 @@ function frame(ts){
   latencies.push(elapsed);times.push(performance.now());
   if(latencies.length>600)latencies.shift();if(times.length>120)times.shift();
   trackFilter(poseResult,handResult,performance.now());
+  if(!guided)training.frame(poseResult,handResult,timestamp);
   draw(poseResult,handResult);
   if(ts-lastRender>120){update();drawFilterPlots();setButtons();lastRender=ts}
  }catch(e){status('Inference error: '+e.message,true);stop()}
 }
-async function stop(){active=false;paused=false;cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(pose){pose.close();pose=null}if(hands){hands.close();hands=null}video.srcObject=null;ctx.clearRect(0,0,overlay.width,overlay.height);$('placeholder').hidden=false;setButtons();update()}
+async function stop(){training.resetBuffer();active=false;paused=false;cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(pose){pose.close();pose=null}if(hands){hands.close();hands=null}video.srcObject=null;ctx.clearRect(0,0,overlay.width,overlay.height);$('placeholder').hidden=false;setButtons();update()}
 async function start(){
  if(active)return;const cfg=readSettings();$('start').disabled=true;status('Loading selected models and requesting camera…');
  try{
@@ -482,7 +504,7 @@ function exportCSV(){if(!history.length){status('Save a benchmark before exporti
 $('mode').onchange=()=>{const m=$('mode').value;$('model').disabled=m==='hands';$('maxpose').disabled=m==='hands';$('modeHelp').textContent=m==='hands'?'Tracks up to two hands and 21 landmarks per hand. Pose inference is not run.':m==='both'?'Runs body pose and hand landmarks on each sampled frame. Expect a higher total cost because both models execute.':'Tracks 33 body landmarks per person. Hand inference is not run.'};$('compareMetric').onchange=renderComparison;$('comparePreset').onchange=()=>{if($('comparePreset').value!=='custom')selectPreset($('comparePreset').value)};$('selectNone').onclick=()=>{selectedBenchmarks.clear();selectionTouched=true;$('comparePreset').value='custom';renderComparison()};$('movementTest').onclick=runMovementTest;$('resetFilters').onclick=resetFilterState;$('downloadFilters').onclick=exportFilterCSV;
 for(const [id,label] of [['emaAlpha','emaLabel'],['euroCutoff','cutoffLabel'],['euroBeta','betaLabel']])$(id).oninput=()=>{$(label).textContent=Number($(id).value).toFixed(2);resetFilterState()};
 $('filterLandmark').onchange=()=>{resetFilterState();const isHand=$('filterLandmark').value.startsWith('hand');const m=readSettings().mode;$('filterMessage').textContent=isHand&&m==='pose'?'Hand landmark selected: change detection mode to Hands Only or Body + Hands and restart.':!isHand&&m==='hands'?'Body landmark selected: switch to Pose Only or Body + Hands and restart.':'Landmark ready. The colored camera dots and graphs update as soon as it is detected.'};
-$('quickTest').onclick=quickTest;$('allModesTest').onclick=allModesTest;$('guided').onclick=guidedTest;$('start').onclick=start;$('stop').onclick=()=>{if(guided){abortGuided=true;$('testCountdown').textContent='Cancelling…';}else{stop();status('Stopped. Camera released.')}};$('pause').onclick=()=>{paused=!paused;setButtons();status(paused?'Inference paused; camera remains active.':'Inference resumed.')};$('snapshot').onclick=save;$('export').onclick=exportCSV;$('clear').onclick=()=>{if(!confirm('Delete all saved benchmark results in this browser?'))return;history=[];selectedBenchmarks.clear();selectionTouched=false;localStorage.removeItem(STORAGE);renderHistory();renderComparison()};$('target').oninput=()=>{$('targetValue').textContent=$('target').value+' FPS';$('budget').textContent=fmt(1000/Number($('target').value))+' ms'};$('draw').onchange=()=>{if(!$('draw').checked)ctx.clearRect(0,0,overlay.width,overlay.height)};window.addEventListener('pagehide',()=>{stream?.getTracks().forEach(t=>t.stop())});
+$('quickTest').onclick=quickTest;$('allModesTest').onclick=allModesTest;$('guided').onclick=guidedTest;$('start').onclick=start;$('stop').onclick=()=>{if(guided){abortGuided=true;$('testCountdown').textContent='Cancelling…';}else{stop();status('Stopped. Camera released.')}};$('pause').onclick=()=>{paused=!paused;training.resetBuffer();setButtons();status(paused?'Inference paused; camera remains active.':'Inference resumed.')};$('snapshot').onclick=save;$('export').onclick=exportCSV;$('clear').onclick=()=>{if(!confirm('Delete all saved benchmark results in this browser?'))return;history=[];selectedBenchmarks.clear();selectionTouched=false;localStorage.removeItem(STORAGE);renderHistory();renderComparison()};$('target').oninput=()=>{$('targetValue').textContent=$('target').value+' FPS';$('budget').textContent=fmt(1000/Number($('target').value))+' ms'};$('draw').onchange=()=>{if(!$('draw').checked)ctx.clearRect(0,0,overlay.width,overlay.height)};window.addEventListener('pagehide',()=>{stream?.getTracks().forEach(t=>t.stop())});
 if(!navigator.mediaDevices?.getUserMedia){$('quickTest').disabled=true;$('allModesTest').disabled=true;$('guided').disabled=true;$('start').disabled=true;status('Camera API unavailable. Use a secure HTTPS GitHub Pages URL in a supported browser.',true)}
 
 
